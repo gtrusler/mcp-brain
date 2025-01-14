@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# TypeScript build output
+dist/
+build/
+*.tsbuildinfo
+
+# Environment variables
+.env
+.env.*
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# System files
+.DS_Store
+Thumbs.db
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Project specific
+memory/*.jsonl
+memory/last_context.md

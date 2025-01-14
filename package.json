@@ -1,0 +1,21 @@
+{
+  "name": "supabase-memory",
+  "version": "1.0.0",
+  "description": "MCP server for memory storage in Supabase",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc && tsc -p scripts/tsconfig.json",
+    "start": "node dist/index.js",
+    "import-memory": "node dist/scripts/import_memory.js",
+    "compare-memory": "node dist/scripts/compare_memory.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.0.1",
+    "@supabase/supabase-js": "^2.39.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.9.3",
+    "typescript": "^5.6.2"
+  }
+}
