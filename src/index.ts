@@ -97,93 +97,76 @@ class BrainServer {
 
   private async initDatabase() {
     try {
-      // Create locks table if it doesn't exist
-      await this.supabase.rpc('init_database');
-      debugLog('Database initialization successful');
-    } catch (error) {
-      // If the function doesn't exist, create the tables directly
-      if ((error as any)?.message?.includes('Could not find the function')) {
-        const { error: tableError } = await this.supabase
-          .from('locks')
-          .select('*')
-          .limit(1);
+      // Verify database connection and table access
+      const { error } = await this.supabase
+        .from('locks')
+        .select('*')
+        .limit(1);
 
-        // If locks table doesn't exist, create all tables
-        if (tableError?.code === '42P01') {
-          debugLog('Creating database tables');
-          await this.supabase.rpc('create_tables', {
-            sql: `
-              CREATE TABLE IF NOT EXISTS locks (
-                id TEXT PRIMARY KEY,
-                acquired_at TIMESTAMP WITH TIME ZONE NOT NULL,
-                locked_by TEXT NOT NULL
-              );
-
-              CREATE TABLE IF NOT EXISTS entities (
-                id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-                name TEXT UNIQUE NOT NULL,
-                entity_type TEXT NOT NULL,
-                observations TEXT[] DEFAULT '{}',
-                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-              );
-
-              CREATE TABLE IF NOT EXISTS relations (
-                id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-                "from" TEXT NOT NULL REFERENCES entities(name) ON DELETE CASCADE,
-                "to" TEXT NOT NULL REFERENCES entities(name) ON DELETE CASCADE,
-                relation_type TEXT NOT NULL,
-                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE("from", "to", relation_type)
-              );
-            `
-          });
-          debugLog('Database tables created successfully');
-        }
-      } else {
-        console.error('Failed to initialize database:', error);
+      if (error?.code === '42P01') {
+        throw new Error(
+          'Database tables not found. Please run the SQL migration script from sql/01_mcp_brain_schema.sql in your Supabase project.'
+        );
+      } else if (error) {
         throw error;
       }
+
+      debugLog('Database connection verified');
+    } catch (error) {
+      console.error('Database initialization failed:', error);
+      throw error;
     }
   }
 
   private async withLock<T>(operation: () => Promise<T>): Promise<T> {
     const lockId = 'memory_lock';
-    const maxRetries = 10;
-    const retryDelay = 1000; // 1 second
-    const lockTimeout = 30000; // 30 seconds
+    const maxRetries = 20; // Increased from 10
+    const retryDelay = 2000; // Increased from 1 second
+    const lockTimeout = 60000; // Increased from 30 seconds
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
-        // Clear any stale locks
-        const { data: locks } = await this.supabase
+        // Always try to clear stale locks first
+        const { data: locks, error: selectError } = await this.supabase
           .from('locks')
           .select('*')
-          .eq('id', lockId)
-          .single();
+          .eq('id', lockId);
 
-        if (locks) {
-          const acquiredAt = new Date(locks.acquired_at).getTime();
-          const now = Date.now();
-          if (now - acquiredAt > lockTimeout) {
-            debugLog(`Clearing stale lock from ${locks.locked_by}`);
+        if (selectError) {
+          debugLog(`Error checking locks: ${selectError.message}`);
+          throw selectError;
+        }
+
+        // Clear any stale or invalid locks
+        for (const lock of locks || []) {
+          try {
+            const acquiredAt = new Date(lock.acquired_at).getTime();
+            const now = Date.now();
+            if (now - acquiredAt > lockTimeout) {
+              debugLog(`Clearing stale lock from ${lock.locked_by}`);
+              await this.supabase
+                .from('locks')
+                .delete()
+                .eq('id', lock.id);
+            }
+          } catch (e) {
+            debugLog(`Error processing lock ${lock.id}: ${e}`);
+            // Try to delete invalid lock
             await this.supabase
               .from('locks')
               .delete()
-              .eq('id', lockId);
+              .eq('id', lock.id);
           }
         }
 
-        // Try to acquire lock
+        // Try to acquire lock with unique ID
+        const lockerId = `${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
         const { error: lockError } = await this.supabase
           .from('locks')
-          .upsert({
+          .insert({
             id: lockId,
             acquired_at: new Date().toISOString(),
-            locked_by: `${process.pid}-${Date.now()}`
-          }, {
-            onConflict: 'id'
+            locked_by: lockerId
           });
 
         if (!lockError) {
@@ -191,12 +174,27 @@ class BrainServer {
             // Execute operation while holding lock
             return await operation();
           } finally {
-            // Release lock
-            await this.supabase
+            // Release lock if we still own it
+            const { data: currentLock } = await this.supabase
               .from('locks')
-              .delete()
-              .eq('id', lockId);
+              .select('*')
+              .eq('id', lockId)
+              .eq('locked_by', lockerId)
+              .single();
+
+            if (currentLock) {
+              await this.supabase
+                .from('locks')
+                .delete()
+                .eq('id', lockId)
+                .eq('locked_by', lockerId);
+            }
           }
+        } else if (lockError.code === '23505') { // Unique violation
+          debugLog(`Lock is held, attempt ${attempt + 1}/${maxRetries}`);
+        } else {
+          debugLog(`Lock error: ${lockError.message}`);
+          throw lockError;
         }
 
         // Lock is held, wait and retry
