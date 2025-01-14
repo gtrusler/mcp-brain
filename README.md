@@ -107,12 +107,23 @@ For installing mcp-brain on additional machines:
 
 Your Supabase credentials can be found in your Supabase project settings under Project Settings > API.
 
+### Applying Changes
+
+After installation or any configuration changes:
+
+1. If VSCode is open:
+   - Close all Claude conversations
+   - Run the "Developer: Reload Window" command (Cmd/Ctrl + Shift + P, then type "reload")
+
+2. If VSCode is closed:
+   - Simply start VSCode and the new configuration will be loaded automatically
+
 ### Verifying the Installation
 
-After installation, you can verify the setup by:
-1. Opening VSCode with the Claude extension
-2. Creating a new conversation
-3. Running a command like `Can you use your brain?` to test the connection
+After reloading VSCode, verify the setup by:
+1. Creating a new conversation with Claude
+2. Running a command like `Can you use your brain?` to test the connection
+3. The brain should respond with information about its capabilities
 
 ## Usage
 

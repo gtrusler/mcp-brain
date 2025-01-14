@@ -109,6 +109,14 @@ async function configure() {
     fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
     console.log('\nConfiguration saved successfully!');
     console.log(`Settings file: ${settingsPath}`);
+
+    // Display restart instructions
+    console.log('\nTo apply changes:');
+    console.log('1. If VSCode is open:');
+    console.log('   - Close all Claude conversations');
+    console.log('   - Run "Developer: Reload Window" (Cmd/Ctrl + Shift + P, then type "reload")');
+    console.log('\n2. If VSCode is closed:');
+    console.log('   - Simply start VSCode and the new configuration will be loaded automatically');
   } catch (error) {
     console.error('Error saving settings:', error);
     process.exit(1);
