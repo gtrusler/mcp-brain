@@ -18,10 +18,35 @@ async function prompt(question: string): Promise<string> {
 
 async function configure() {
   console.log('MCP Brain Configuration\n');
-  console.log('Please enter your Supabase credentials:');
 
+  // Determine installation type
+  console.log('Installation Type:');
+  console.log('1. Primary Installation (new Supabase project)');
+  console.log('2. Secondary Installation (use existing Supabase project)\n');
+
+  const installType = await prompt('Select installation type (1/2): ');
+
+  if (installType === '1') {
+    console.log('\nPrimary Installation');
+    console.log('1. Create a new project at https://supabase.com if you haven\'t already');
+    console.log('2. Get your credentials from Project Settings > API');
+    console.log('3. Save these credentials for any secondary installations\n');
+  } else if (installType === '2') {
+    console.log('\nSecondary Installation');
+    console.log('Use the Supabase credentials from your primary installation\n');
+  } else {
+    console.error('Invalid selection');
+    process.exit(1);
+  }
+
+  console.log('Please enter your Supabase credentials:');
   const url = await prompt('Supabase URL: ');
   const key = await prompt('Supabase Key: ');
+
+  if (!url || !key) {
+    console.error('Both URL and Key are required');
+    process.exit(1);
+  }
 
   // Determine the correct settings file path based on OS
   let settingsPath: string;

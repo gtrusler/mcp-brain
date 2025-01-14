@@ -14,12 +14,39 @@ A cognitive memory system implemented as an MCP server that stores data in Supab
 ## Prerequisites
 
 - Node.js and npm
-- A Supabase account and project
 - VSCode with Claude extension
+- One of the following:
+  - A new Supabase account and project (for primary installation)
+  - Supabase credentials from an existing installation (for secondary installations)
+
+## Installation Types
+
+Choose the appropriate installation type:
+
+1. **Primary Installation**: Set up mcp-brain with a new Supabase project. This is for the first machine that will use the brain.
+
+2. **Secondary Installation**: Install mcp-brain on additional machines using the same Supabase database. This allows multiple machines to share the same knowledge graph.
 
 ## Installation
 
 The installation process involves building the project and configuring it with your Supabase credentials. You can do this either automatically using the provided script, or manually.
+
+### Primary Installation
+
+For your first installation of mcp-brain:
+
+1. Create a new Supabase project at https://supabase.com
+2. Get your project URL and API key from Project Settings > API
+3. Follow either the automated or manual installation steps below
+4. Save your Supabase credentials for use in secondary installations
+
+### Secondary Installation
+
+For installing mcp-brain on additional machines:
+
+1. Get the Supabase URL and API key from your primary installation
+2. Follow either the automated or manual installation steps below
+3. Use the same credentials to ensure all instances share the same knowledge graph
 
 ### Option A: Automated Installation
 
