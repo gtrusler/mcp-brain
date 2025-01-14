@@ -20,7 +20,7 @@ const debugLog = (message: string) => {
   if (!DEBUG) return;
   try {
     // Use os.tmpdir() for platform-independent temporary directory
-    const logPath = path.join(tmpdir(), 'supabase-memory-debug.log');
+    const logPath = path.join(tmpdir(), 'mcp-brain-debug.log');
     fs.appendFileSync(logPath, `${new Date().toISOString()} - ${message}\n`);
   } catch (err) {
     if (DEBUG) {
@@ -45,7 +45,7 @@ interface Relation {
   updated_at?: string;
 }
 
-class SupabaseMemoryServer {
+class BrainServer {
   private server: Server;
   private supabase: SupabaseClient;
 
@@ -60,8 +60,9 @@ class SupabaseMemoryServer {
 
     this.server = new Server(
       {
-        name: 'supabase-memory',
-        version: '1.0.0',
+        name: 'mcp-brain',
+        version: '0.1.0',
+        description: 'A cognitive memory system that helps the model remember and reason about past interactions',
       },
       {
         capabilities: {
@@ -81,6 +82,70 @@ class SupabaseMemoryServer {
       await this.server.close();
       process.exit(0);
     });
+  }
+
+  private async initialize() {
+    // Initialize database tables
+    await this.initDatabase();
+    debugLog('Initialized database tables');
+
+    // Connect server
+    const transport = new StdioServerTransport();
+    await this.server.connect(transport);
+    debugLog('Brain MCP server running on stdio');
+  }
+
+  private async initDatabase() {
+    try {
+      // Create locks table if it doesn't exist
+      await this.supabase.rpc('init_database');
+      debugLog('Database initialization successful');
+    } catch (error) {
+      // If the function doesn't exist, create the tables directly
+      if ((error as any)?.message?.includes('Could not find the function')) {
+        const { error: tableError } = await this.supabase
+          .from('locks')
+          .select('*')
+          .limit(1);
+
+        // If locks table doesn't exist, create all tables
+        if (tableError?.code === '42P01') {
+          debugLog('Creating database tables');
+          await this.supabase.rpc('create_tables', {
+            sql: `
+              CREATE TABLE IF NOT EXISTS locks (
+                id TEXT PRIMARY KEY,
+                acquired_at TIMESTAMP WITH TIME ZONE NOT NULL,
+                locked_by TEXT NOT NULL
+              );
+
+              CREATE TABLE IF NOT EXISTS entities (
+                id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+                name TEXT UNIQUE NOT NULL,
+                entity_type TEXT NOT NULL,
+                observations TEXT[] DEFAULT '{}',
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+              );
+
+              CREATE TABLE IF NOT EXISTS relations (
+                id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+                "from" TEXT NOT NULL REFERENCES entities(name) ON DELETE CASCADE,
+                "to" TEXT NOT NULL REFERENCES entities(name) ON DELETE CASCADE,
+                relation_type TEXT NOT NULL,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE("from", "to", relation_type)
+              );
+            `
+          });
+          debugLog('Database tables created successfully');
+        }
+      } else {
+        console.error('Failed to initialize database:', error);
+        throw error;
+      }
+    }
   }
 
   private async withLock<T>(operation: () => Promise<T>): Promise<T> {
@@ -150,7 +215,7 @@ class SupabaseMemoryServer {
       tools: [
         {
           name: 'read_graph',
-          description: 'Read the entire knowledge graph',
+          description: 'Read the brain\'s entire memory graph to recall past interactions and knowledge',
           inputSchema: {
             type: 'object',
             properties: {},
@@ -158,7 +223,7 @@ class SupabaseMemoryServer {
         },
         {
           name: 'create_entities',
-          description: 'Create multiple new entities in the knowledge graph',
+          description: 'Store new memories as entities in the brain\'s knowledge graph',
           inputSchema: {
             type: 'object',
             properties: {
@@ -183,7 +248,7 @@ class SupabaseMemoryServer {
         },
         {
           name: 'create_relations',
-          description: 'Create multiple new relations between entities',
+          description: 'Create connections between memories in the brain\'s knowledge graph',
           inputSchema: {
             type: 'object',
             properties: {
@@ -286,11 +351,12 @@ class SupabaseMemoryServer {
   }
 
   async run() {
-    const transport = new StdioServerTransport();
-    await this.server.connect(transport);
-    debugLog('Supabase Memory MCP server running on stdio');
+    await this.initialize();
   }
 }
 
-const server = new SupabaseMemoryServer();
-server.run().catch(console.error);
+const server = new BrainServer();
+server.run().catch(error => {
+  console.error('Failed to start server:', error);
+  process.exit(1);
+});
