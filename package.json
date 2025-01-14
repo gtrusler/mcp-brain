@@ -1,18 +1,20 @@
 {
-  "name": "supabase-memory",
-  "version": "1.0.0",
-  "description": "MCP server for memory storage in Supabase",
+  "name": "mcp-brain",
+  "version": "0.1.0",
+  "description": "MCP server that acts as the model's cognitive memory system",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc && tsc -p scripts/tsconfig.json",
     "start": "node dist/index.js",
+    "configure": "node dist/scripts/configure.js",
     "import-memory": "node dist/scripts/import_memory.js",
     "compare-memory": "node dist/scripts/compare_memory.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.0.1",
-    "@supabase/supabase-js": "^2.39.0"
+    "@supabase/supabase-js": "^2.39.0",
+    "dotenv": "^16.4.7"
   },
   "devDependencies": {
     "@types/node": "^22.9.3",

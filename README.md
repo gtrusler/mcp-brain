@@ -1,176 +1,118 @@
-# Supabase Memory MCP Server
+# MCP Brain
 
-An MCP server that provides memory/knowledge graph storage capabilities using Supabase. This server enables multiple Claude instances to safely share and maintain a knowledge graph by implementing database-level locking.
+A cognitive memory system implemented as an MCP server that stores data in Supabase. It provides persistent storage for knowledge graphs with support for entities and relations.
 
 ## Features
 
-- Entity and relation storage with observations
-- Automatic database initialization
-- Concurrent access safety through locking mechanism
-- Automatic timestamps for all records
-- Full text search capabilities
-- Cascading deletes for relations
+- Persistent storage using Supabase
+- Knowledge graph structure with entities and relations
+- Database-level locking for safe concurrent access
+- Cross-platform support (macOS, Linux, Windows)
+- Automatic table initialization
+- Debug logging support
 
-## Quick Install
+## Prerequisites
 
-Ask Claude to install this MCP server by saying:
-```
-Install the MCP server from https://github.com/gtrusler/supabase-memory-mcp.git
-```
+- Node.js and npm
+- A Supabase account and project
+- VSCode with Claude extension
 
-Claude will:
-1. Clone the repository
-2. Install dependencies
-3. Build the project
-4. Configure the MCP server for VSCode
-5. Ask if you have Claude Desktop installed
-6. If yes, configure the server for Desktop as well
-7. Share the same memory across both environments
+## Installation
 
-## Manual Setup
+The installation process involves building the project and configuring it with your Supabase credentials. You can do this either automatically using the provided script, or manually.
 
-1. Create a new Supabase project at https://supabase.com
+### Option A: Automated Installation
 
-2. Install the server:
+1. Clone and build the project:
    ```bash
-   # Clone the repository
-   git clone https://github.com/gtrusler/supabase-memory-mcp.git
-   cd supabase-memory-mcp
-
-   # Install dependencies and build
+   git clone https://github.com/gtrusler/mcp-brain.git
+   cd mcp-brain
    npm install
    npm run build
    ```
 
-3. Configure the MCP server in your Claude settings:
+2. Run the configuration script:
+   ```bash
+   npm run configure
+   ```
+   You will be prompted to enter your Supabase URL and API key. The script will automatically:
+   - Create or update the MCP settings file for your OS
+   - Configure the correct paths to the built files
+   - Preserve any existing MCP server configurations
 
-   ### Local Machine (macOS)
-   - VSCode: `~/Library/Application Support/Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json`
-   - Desktop: `~/Library/Application Support/Claude/claude_desktop_config.json`
+### Option B: Manual Installation
 
-   ### Remote VPS (Linux)
-   - VSCode: `~/.vscode-server/data/Machine/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json`
+1. Clone and build the project:
+   ```bash
+   git clone https://github.com/gtrusler/mcp-brain.git
+   cd mcp-brain
+   npm install
+   npm run build
+   ```
 
-   Add the following configuration (adjust paths based on environment):
+2. Locate your MCP settings file:
+   - macOS: `~/Library/Application Support/Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json`
+   - Linux: `~/.config/Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json`
+   - Windows: `%APPDATA%/Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json`
+
+3. Add or update the mcp-brain configuration in the settings file:
    ```json
    {
      "mcpServers": {
-       "supabase-memory": {
+       "mcp-brain": {
          "command": "node",
-         "args": ["/absolute/path/to/supabase-memory-mcp/dist/index.js"],
+         "args": ["path/to/mcp-brain/dist/index.js"],
          "env": {
            "SUPABASE_URL": "your-project-url",
-           "SUPABASE_KEY": "your-service-role-key",
+           "SUPABASE_KEY": "your-api-key",
            "DEBUG": "false"
          }
        }
      }
    }
    ```
+   Replace:
+   - `path/to/mcp-brain` with the absolute path to where you cloned and built the repository
+   - `your-project-url` with your Supabase project URL
+   - `your-api-key` with your Supabase API key
 
-4. Multi-Environment Setup:
-   - The same Supabase database can be accessed from all environments
-   - Local machine (VSCode + Desktop)
-   - Remote VPS (VSCode)
-   - All instances will share the same knowledge graph
-   - Locking mechanism ensures safe concurrent access
+   Note: If the settings file already exists, make sure to preserve any existing MCP server configurations. Only add or update the mcp-brain section within the mcpServers object.
 
-## Environment Support
+Your Supabase credentials can be found in your Supabase project settings under Project Settings > API.
 
-The server automatically adapts to different environments:
-- Works on macOS and Linux
-- Supports VSCode and Desktop installations
-- Uses platform-appropriate paths
-- Shares memory across all environments
+### Verifying the Installation
 
-4. The server will automatically:
-   - Create all required database tables
-   - Set up proper relationships and constraints
-   - Configure automatic timestamp updates
-   - Initialize the locking mechanism
+After installation, you can verify the setup by:
+1. Opening VSCode with the Claude extension
+2. Creating a new conversation
+3. Running a command like `Can you use your brain?` to test the connection
 
-## Verification
+## Usage
 
-After installation, you can verify the setup:
+The brain provides three main tools through the MCP protocol:
 
-1. Restart any running Claude applications
-2. Ask Claude "Who am I?"
-3. If the response includes your personal information, the memory system is working correctly
+1. `read_graph`: Read the entire knowledge graph
+2. `create_entities`: Store new memories as entities
+3. `create_relations`: Create connections between memories
 
-## Debugging
-
-If needed, you can enable debug mode by setting `DEBUG=true` in your MCP configuration file:
-- VSCode: `~/Library/Application Support/Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json`
-- Desktop: `~/Library/Application Support/Claude/claude_desktop_config.json`
-
-## Database Schema
-
-### Entities
-- `id`: UUID (primary key)
-- `name`: Text (unique)
-- `entity_type`: Text
-- `observations`: Text[]
-- `created_at`: Timestamp
-- `updated_at`: Timestamp
-
-### Relations
-- `id`: UUID (primary key)
-- `from`: Text (references entities.name)
-- `to`: Text (references entities.name)
-- `relation_type`: Text
-- `created_at`: Timestamp
-- `updated_at`: Timestamp
-
-### Locks
-- `id`: Text (primary key)
-- `acquired_at`: Timestamp
-- `locked_by`: Text
+These tools can be used through Claude to store and recall information persistently.
 
 ## Development
 
-```bash
-# Install dependencies
-npm install
+- `npm run build` - Build the TypeScript project
+- `npm run configure` - Configure Supabase credentials
+- `npm start` - Start the MCP server directly (not typically needed)
 
-# Build the project
-npm run build
+## Architecture
 
-# Start the server
-npm start
-```
+- Uses TypeScript and @modelcontextprotocol/sdk
+- Stores data in Supabase tables:
+  - entities: Nodes in the knowledge graph
+  - relations: Edges connecting entities
+  - locks: Database-level locking for concurrent access
+- Automatic table creation on first run
+- Platform-independent configuration
 
-## Importing Existing Memory
+## License
 
-The server includes a script to import existing memory from a JSONL file:
-
-```bash
-# Import from default location (memory/memory.jsonl)
-npm run import-memory
-
-# Import from custom location
-npm run import-memory -- path/to/memory.jsonl
-```
-
-The import process:
-1. Reads entities and relations from the JSONL file
-2. Imports data in batches to prevent memory issues
-3. Maintains relationships between entities
-4. Preserves all observations and metadata
-
-## Concurrent Access
-
-The server implements a robust locking mechanism that ensures safe concurrent access from multiple Claude instances:
-
-1. Lock Management:
-   - Each operation first attempts to acquire a lock
-   - If the lock is held, it retries up to 10 times with 1-second delays
-   - After the operation completes, the lock is automatically released
-   - A finally block ensures locks are always released, even if operations fail
-
-2. Stale Lock Protection:
-   - Locks automatically expire after 30 seconds
-   - System checks for and clears stale locks before each operation
-   - Prevents deadlocks if a process crashes or fails to release its lock
-   - Debug logging tracks lock acquisitions and releases
-
-This allows multiple Claude instances to safely share the same database without conflicts or data corruption, while ensuring the system can recover from any lock-related issues.
+MIT
