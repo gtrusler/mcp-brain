@@ -2,7 +2,7 @@
 
 A cognitive memory system implemented as an MCP server that stores data in Supabase. It provides persistent storage across different Claude installations for knowledge graphs with support for entities and relations.
 
-## Notice: 
+## Notice
 
 This is very much a work in progress, so don't expect it to work flawlessly without some tweaking. I was using the [MCP Memory Server](https://github.com/docker/mcp-servers/tree/main/src/memory) but I wanted it to work on Claude installed on different computers at the same time. I hacked together a transfer process and decided that was stupid, so I moved it to Supabase. It works once you get it running, but the installation isn't as polished as it should be. I strongly recommend setting it up in VSC with Cline Dev or something similar first instead of trying to make it work in Claude Desktop first. I have been able to get Claude Desktop, VSC on 2 different laptops and on a VPS, all sharing the same Supabase db. 
 
